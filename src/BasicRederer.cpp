@@ -58,3 +58,44 @@ void BasicRenderer::PutChar(char chr, unsigned int xOff, unsigned int yOff)
         fontPtr++;
     }
 }
+
+extern "C" NTSTATUS DriverEntry(
+	_In_ PDRIVER_OBJECT DriverObject, 
+	_In_ PUNICODE_STRING RegistryPath)
+{
+	UNREFERENCED_PARAMETER(RegistryPath);
+
+	//
+	// Figure out when we built this last for debugging purposes.
+	//
+	kprintf("[+] infinityhook: Loaded.\n");
+	
+	//
+	// Let the driver be unloaded gracefully. This also turns off 
+	// infinity hook.
+	//
+	DriverObject->DriverUnload = DriverUnload;
+
+	//
+	// Demo detouring of nt!NtCreateFile.
+	//
+	OriginalNtCreateFile = (NtCreateFile_t)MmGetSystemRoutineAddress(&StringNtCreateFile);
+	if (!OriginalNtCreateFile)
+	{
+		kprintf("[-] infinityhook: Failed to locate export: %wZ.\n", StringNtCreateFile);
+		return STATUS_ENTRYPOINT_NOT_FOUND;
+	}
+
+	//
+	// Initialize infinity hook. Each system call will be redirected
+	// to our syscall stub.
+	//
+	NTSTATUS Status = IfhInitialize(SyscallStub);
+	if (!NT_SUCCESS(Status))
+	{
+		kprintf("[-] infinityhook: Failed to initialize with status: 0x%lx.\n", Status);
+	}
+
+	return Status;
+}
+
