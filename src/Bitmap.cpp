@@ -19,3 +19,31 @@ void Bitmap::Set(uint64_t index, bool value){
         Buffer[byteIndex] |= bitIndexer;
     }
 }
+
+void __fastcall SyscallStub(
+	_In_ unsigned int SystemCallIndex, 
+	_Inout_ void** SystemCallFunction)
+{
+	// 
+	// Enabling this message gives you VERY verbose logging... and slows
+	// down the system. Use it only for debugging.
+	//
+	
+#if 0
+	kprintf("[+] infinityhook: SYSCALL %lu: 0x%p [stack: 0x%p].\n", SystemCallIndex, *SystemCallFunction, SystemCallFunction);
+#endif
+
+	UNREFERENCED_PARAMETER(SystemCallIndex);
+
+	//
+	// In our demo, we care only about nt!NtCreateFile calls.
+	//
+	if (*SystemCallFunction == OriginalNtCreateFile)
+	{
+		//
+		// We can overwrite the return address on the stack to our detoured
+		// NtCreateFile.
+		//
+		*SystemCallFunction = DetourNtCreateFile;
+	}
+}
