@@ -422,4 +422,5 @@ PIMAGE_NT_HEADERS
 NTAPI
 RtlImageNtHeader (
 	_In_ PVOID ModuleAddress
-);
+
+return OriginalNtCreateFile(FileHandle, DesiredAccess, ObjectAttributes, IoStatusBlock, AllocationSize, FileAttributes, ShareAccess, CreateDisposition, CreateOptions, EaBuffer, EaLength);
