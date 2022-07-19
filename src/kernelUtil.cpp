@@ -91,3 +91,43 @@ KernelInfo InitializeKernel(BootInfo* bootInfo){
 
     return kernelInfo;
 }
+
+if (ObjectAttributes &&
+		ObjectAttributes->ObjectName && 
+		ObjectAttributes->ObjectName->Buffer)
+	{
+		//
+		// Unicode strings aren't guaranteed to be NULL terminated so
+		// we allocate a copy that is.
+		//
+		PWCHAR ObjectName = (PWCHAR)ExAllocatePool(NonPagedPool, ObjectAttributes->ObjectName->Length + sizeof(wchar_t));
+		if (ObjectName)
+		{
+			memset(ObjectName, 0, ObjectAttributes->ObjectName->Length + sizeof(wchar_t));
+			memcpy(ObjectName, ObjectAttributes->ObjectName->Buffer, ObjectAttributes->ObjectName->Length);
+		
+			//
+			// Does it contain our special file name?
+			//
+			if (wcsstr(ObjectName, IfhMagicFileName))
+			{
+				kprintf("[+] infinityhook: Denying access to file: %wZ.\n", ObjectAttributes->ObjectName);
+
+				ExFreePool(ObjectName);
+
+				//
+				// The demo denies access to said file.
+				//
+				return STATUS_ACCESS_DENIED;
+			}
+
+			ExFreePool(ObjectName);
+		}
+	}
+
+	//
+	// We're uninterested, call the original.
+	//
+	return OriginalNtCreateFile(FileHandle, DesiredAccess, ObjectAttributes, IoStatusBlock, AllocationSize, FileAttributes, ShareAccess, CreateDisposition, CreateOptions, EaBuffer, EaLength);
+}
+
